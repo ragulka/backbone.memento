@@ -20,9 +20,9 @@ Backbone.Memento = (function(Backbone, _){
     var serializer = new Serializer(structure, config);
     var mementoStack = new MementoStack(structure, config);
 
-    var restoreState = function (previousState, restoreConfig){
+    var restoreState = function (previousState, restoreConfig, options){
       if (!previousState){ return; }
-      serializer.deserialize(previousState, restoreConfig);
+      serializer.deserialize(previousState, restoreConfig, options);
     };
 
     this.store = function(){
@@ -30,9 +30,9 @@ Backbone.Memento = (function(Backbone, _){
       mementoStack.push(currentState);
     };
 
-    this.restore = function(restoreConfig){
+    this.restore = function(restoreConfig, options){
       var previousState = mementoStack.pop();
-      restoreState(previousState, restoreConfig);
+      restoreState(previousState, restoreConfig, options);
     };
 
     this.restart = function(restoreConfig){
@@ -48,10 +48,10 @@ Backbone.Memento = (function(Backbone, _){
   var TypeHelper = function(structure){
     if (structure instanceof Backbone.Model) {
       this.removeAttr = function(data){ structure.unset(data); };
-      this.restore = function(data){ structure.set(data); };
+      this.restore = function(data, options){ structure.set(data, options); };
     } else {
       this.removeAttr = function(data){ structure.remove(data); };
-      this.restore = function(data){ structure.reset(data); };
+      this.restore = function(data, options){ structure.reset(data, options); };
     }
   };
 
@@ -100,7 +100,7 @@ Backbone.Memento = (function(Backbone, _){
       }
     }
 
-    function restoreState(previousState, restoreConfig){
+    function restoreState(previousState, restoreConfig, options){
       var oldAttrs = dropIgnored(previousState, restoreConfig);
 
       //get the current state
@@ -111,7 +111,7 @@ Backbone.Memento = (function(Backbone, _){
       var removedAttrs = getAddedAttrDiff(oldAttrs, currentAttrs);
       removeAttributes(structure, removedAttrs);
 
-      typeHelper.restore(oldAttrs);
+      typeHelper.restore(oldAttrs, options);
     }
 
     this.serialize = function(){
@@ -120,11 +120,11 @@ Backbone.Memento = (function(Backbone, _){
       return attrs;
     }
 
-    this.deserialize = function(previousState, restoreConfig){
+    this.deserialize = function(previousState, restoreConfig, options){
       restoreConfig = _.extend({}, config, restoreConfig);
-      restoreState(previousState, restoreConfig);
+      restoreState(previousState, restoreConfig, options);
     }
-      
+
   };
 
   // ----------------------------
@@ -140,7 +140,7 @@ Backbone.Memento = (function(Backbone, _){
     this.push = function(attrs){
       attributeStack.push(attrs);
     }
-    
+
     this.pop = function(restoreConfig){
       var oldAttrs = attributeStack.pop();
       return oldAttrs;
